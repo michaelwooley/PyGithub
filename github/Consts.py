@@ -50,6 +50,7 @@ headerRateRemaining = "x-ratelimit-remaining"
 headerRateReset = "x-ratelimit-reset"
 headerOAuthScopes = "x-oauth-scopes"
 headerOTP = "x-github-otp"
+headerDate = "date"
 
 defaultMediaType = "application/octet-stream"
 

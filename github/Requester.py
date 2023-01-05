@@ -59,6 +59,7 @@ import re
 import time
 import urllib
 from io import IOBase
+import datetime
 
 import requests
 
@@ -203,7 +204,7 @@ class Requester:
     __connection = None
     __persist = True
     __logger = None
-    __session=None
+    __session = None
 
     @classmethod
     def injectConnectionClasses(cls, httpConnectionClass, httpsConnectionClass):
@@ -340,6 +341,7 @@ class Requester:
             assert False, "Unknown URL scheme"
         self.rate_limiting = (-1, -1)
         self.rate_limiting_resettime = 0
+        self.__rate_limiting_last_date_header = 0.
         self.FIX_REPO_GET_GIT_REF = True
         self.per_page = per_page
 
@@ -534,19 +536,30 @@ class Requester:
             cnx, verb, url, requestHeaders, encoded_input
         )
 
-        if (
-            Consts.headerRateRemaining in responseHeaders
-            and Consts.headerRateLimit in responseHeaders
-        ):
-            self.rate_limiting = (
-                int(responseHeaders[Consts.headerRateRemaining]),
-                int(responseHeaders[Consts.headerRateLimit]),
-            )
-        if Consts.headerRateReset in responseHeaders:
-            self.rate_limiting_resettime = int(responseHeaders[Consts.headerRateReset])
+        # Ensure that rate limit info is actually up-to-date by inspecting the 'Date' header in response. Important for:
+        # - caching. If pull cached response out then the headers are out-of-date.
+        # - Obvs. if you can get any sort of async requests going, then this will also be an issue.
+        if Consts.headerDate not in responseHeaders:
+            # TODO Consider adding config to control whether we're throwing errors. Or maybe only throw errors if we're in custom session mode.
+            raise ValueError("Did not receive 'Date' header in response.")
 
-        if Consts.headerOAuthScopes in responseHeaders:
-            self.oauth_scopes = responseHeaders[Consts.headerOAuthScopes].split(", ")
+        res_date = datetime.datetime.strptime(responseHeaders[Consts.headerDate], '%a, %d %b %Y %H:%M:%S %Z').timestamp()
+
+        if res_date >= self.__rate_limiting_last_date_header:
+            self.__rate_limiting_last_date_header = res_date
+            if (
+                Consts.headerRateRemaining in responseHeaders
+                and Consts.headerRateLimit in responseHeaders
+            ):
+                self.rate_limiting = (
+                    int(responseHeaders[Consts.headerRateRemaining]),
+                    int(responseHeaders[Consts.headerRateLimit]),
+                )
+            if Consts.headerRateReset in responseHeaders:
+                self.rate_limiting_resettime = int(responseHeaders[Consts.headerRateReset])
+
+            if Consts.headerOAuthScopes in responseHeaders:
+                self.oauth_scopes = responseHeaders[Consts.headerOAuthScopes].split(", ")
 
         self.DEBUG_ON_RESPONSE(status, responseHeaders, output)
 
