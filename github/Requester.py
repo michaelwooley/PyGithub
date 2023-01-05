@@ -203,6 +203,7 @@ class Requester:
     __connection = None
     __persist = True
     __logger = None
+    __session=None
 
     @classmethod
     def injectConnectionClasses(cls, httpConnectionClass, httpsConnectionClass):
@@ -301,6 +302,7 @@ class Requester:
         verify,
         retry,
         pool_size,
+        session
     ):
         self._initializeDebugFeature()
 
@@ -328,6 +330,7 @@ class Requester:
         self.__timeout = timeout
         self.__retry = retry  # NOTE: retry can be either int or an urllib3 Retry object
         self.__pool_size = pool_size
+        self.__session = session
         self.__scheme = o.scheme
         if o.scheme == "https":
             self.__connectionClass = self.__httpsConnectionClass
@@ -396,6 +399,7 @@ class Requester:
                         o.port,
                         retry=self.__retry,
                         pool_size=self.__pool_size,
+                        session=self.__session
                     )
                 elif o.scheme == "https":
                     cnx = self.__httpsConnectionClass(
@@ -403,6 +407,7 @@ class Requester:
                         o.port,
                         retry=self.__retry,
                         pool_size=self.__pool_size,
+                        session=self.__session
                     )
         return cnx
 
@@ -620,6 +625,7 @@ class Requester:
             self.__port,
             retry=self.__retry,
             pool_size=self.__pool_size,
+            session=self.__session,
             **kwds,
         )
 
@@ -655,3 +661,19 @@ class Requester:
                 responseHeaders,
                 output,
             )
+
+    @property
+    def session(self):
+        """Get the common requests session (or None).
+
+        :return: A session (or None if using fresh sessions).
+        """
+        return self.__session
+
+    @session.setter
+    def session(self, sess):
+        """Update the request session.
+
+        :param sess: A `requests.Session` or None to use a new session for each request.
+        """
+        self.__session=sess

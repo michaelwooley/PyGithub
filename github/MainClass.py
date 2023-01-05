@@ -104,6 +104,7 @@ class Github:
         verify=True,
         retry=None,
         pool_size=None,
+        session=None
     ):
         """
         :param login_or_token: string
@@ -140,6 +141,7 @@ class Github:
             verify,
             retry,
             pool_size,
+            session
         )
 
     @property
@@ -784,7 +786,13 @@ class Github:
         else:
             headers, data = self.__requester.requestJsonAndCheck("GET", f"/apps/{slug}")
             return GithubApp.GithubApp(self.__requester, headers, data, completed=True)
+    @property
+    def session(self):
+        return self.__requester.session
 
+    @session.setter
+    def session(self, sess):
+        self.__session=sess
 
 class GithubIntegration:
     """

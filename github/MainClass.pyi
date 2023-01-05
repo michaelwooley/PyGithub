@@ -2,6 +2,8 @@ from datetime import datetime
 from io import BytesIO
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union, overload
 
+import requests
+
 from github.AuthenticatedUser import AuthenticatedUser
 from github.Commit import Commit
 from github.ContentFile import ContentFile
@@ -41,6 +43,7 @@ class Github:
         verify: bool = ...,
         retry: Optional[Union[int, Retry]] = ...,
         pool_size: Optional[int] = ...,
+        session:Optional[requests.Session]=...,
     ) -> None: ...
     @property
     def FIX_REPO_GET_GIT_REF(self) -> bool: ...
@@ -139,6 +142,11 @@ class Github:
         order: Union[str, _NotSetType] = ...,
         **qualifiers: Any
     ) -> PaginatedList[NamedUser]: ...
+
+    @property
+    def session(self) -> Optional[requests.Session]: ...
+    @session.setter
+    def session(self, sess:Optional[requests.Session]) -> None: ...
 
 class GithubIntegration:
     def __init__(
