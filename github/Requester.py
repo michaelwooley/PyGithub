@@ -674,6 +674,9 @@ class Requester:
     def session(self, sess):
         """Update the request session.
 
+        Also reset connection.
+
         :param sess: A `requests.Session` or None to use a new session for each request.
         """
         self.__session=sess
+        self.__connection = None
